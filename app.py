@@ -72,6 +72,15 @@ _PAPER   = "rgba(0,0,0,0)"  # transparent so card background shows through
 _TEXT    = "#f8f8f2"         # --text (Monokai foreground)
 _GRID    = "#49483e"         # --surface2 (subtle grid lines)
 
+TYPE_COLORS = {
+    "normal":   "#A8A878", "fire":     "#F08030", "water":    "#6890F0",
+    "electric": "#F8D030", "grass":    "#78C850", "ice":      "#98D8D8",
+    "fighting": "#C03028", "poison":   "#A040A0", "ground":   "#E0C068",
+    "flying":   "#A890F0", "psychic":  "#F85888", "bug":      "#A8B820",
+    "rock":     "#B8A038", "ghost":    "#705898", "dragon":   "#7038F8",
+    "dark":     "#705848", "steel":    "#B8B8D0", "fairy":    "#EE99AC",
+}
+
 
 def apply_dark_theme(fig):
     """
@@ -125,34 +134,39 @@ def build_good_chart(df, display_name, types):
     types[0] is the primary type. Use TYPE_COLORS[types[0]] to get its hex color.
     """
 
-    # ── Type color reference ───────────────────────────────────────────────────
-    # Standard Pokémon type colors — same palette used in the games and Bulbapedia.
-    # Use this dict to look up the hex color for any type name.
-    TYPE_COLORS = {
-        "normal":   "#A8A878", "fire":     "#F08030", "water":    "#6890F0",
-        "electric": "#F8D030", "grass":    "#78C850", "ice":      "#98D8D8",
-        "fighting": "#C03028", "poison":   "#A040A0", "ground":   "#E0C068",
-        "flying":   "#A890F0", "psychic":  "#F85888", "bug":      "#A8B820",
-        "rock":     "#B8A038", "ghost":    "#705898", "dragon":   "#7038F8",
-        "dark":     "#705848", "steel":    "#B8B8D0", "fairy":    "#EE99AC",
-    }
-
     # ── START: Replace this with your radar chart, then update the color ───────
 
-    # Step 1 — paste the radar chart code from the lab doc here.
+    stats  = df["stat"].tolist()
+    values = df["value"].tolist()
+    stats_closed  = stats  + [stats[0]]
+    values_closed = values + [values[0]]
 
-    # Step 2 — replace the hardcoded fillcolor and line color with the
-    #           color for this Pokémon's primary type. For example, if the
-    #           primary type is "fire" the color would be TYPE_COLORS["fire"].
-    #           Use types[0] to always get the primary type dynamically.
+    hex_color = TYPE_COLORS[types[0]]
+    r = int(hex_color[1:3], 16)
+    g = int(hex_color[3:5], 16)
+    b = int(hex_color[5:7], 16)
+    fill   = f"rgba({r}, {g}, {b}, 0.3)"
+    border = f"rgba({r}, {g}, {b}, 1.0)"
 
-    good_fig = px.pie(
-        df,
-        names="stat",
-        values="value",
-        color="stat",
+    good_fig = go.Figure()
+    good_fig.add_trace(go.Scatterpolar(
+        r=values_closed,
+        theta=stats_closed,
+        fill="toself",
+        fillcolor=fill,
+        line=dict(color=border),
+        name=display_name,
+    ))
+
+    good_fig.update_layout(
+        title=f"{display_name} — Base Stat Radar",
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 160],
+            )
+        ),
     )
-
 
     # ── END ────────────────────────────────────────────────────────────────────
     return apply_dark_theme(good_fig)
@@ -167,12 +181,24 @@ def build_my_chart(df, display_name, types):
     Pick a chart type different from both the pie and the radar.
     Your chart should work well for any Pokémon, not just Charizard.
     """
-    # ── Replace this placeholder with your own chart ───────────────────────────
-    fig = go.Figure()
-    fig.update_layout(
-        title="Your chart goes here — edit build_my_chart() in app.py",
+    color = TYPE_COLORS.get(types[0], "#888888") if types else "#888888"
+    chart_df = df.sort_values("value", ascending=True)
+
+    fig = px.bar(
+        chart_df,
+        x="value",
+        y="stat",
+        orientation="h",
+        title=f"{display_name} — Stat Rankings",
+        labels={"value": "Base Stat", "stat": "Stat"},
+        color_discrete_sequence=[color],
     )
-    # ── End of placeholder ─────────────────────────────────────────────────────
+
+    fig.update_layout(
+        xaxis_title="Base Stat",
+        yaxis_title="Stat",
+        yaxis=dict(categoryorder="total ascending"),
+    )
     return apply_dark_theme(fig)
 
 
